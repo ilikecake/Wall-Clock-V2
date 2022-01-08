@@ -1,0 +1,11 @@
+[Unit]
+Description=Wall Clock
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/usr/bin/python3 /home/pi/software/wall_clock.py
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
