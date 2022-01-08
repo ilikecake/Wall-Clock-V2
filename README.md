@@ -71,6 +71,7 @@ Some things on the Raspberry Pi can be disabled to conserve power. This device i
 - Turn off bluetooth 
   - In '/boot/config.txt', add `dtoverlay=disable-bt` to disable the hardware.
   - Run `sudo systemctl disable hciuart.service` and `sudo systemctl disable bluetooth.service` to disable the software.
+
 I measure ~150mA power consumption on the 5V line with the above changes. This equates to ~7 hour on-time with a 1200mAh battery. Internal temperature on the CPU is ~95F. <Check this later when the case is closed>
 
 ## Notes:
