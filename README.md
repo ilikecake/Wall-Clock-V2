@@ -1,8 +1,22 @@
 # Wall-Clock-V2
+<Info on what this project is here, maybe a picture>
 
-Installation Steps
+##Bill of Materials
+<Add a BOM here>
+
+##Making interface PCBs.
+This project uses a few simple custom PCBs. <more info here someday>
+
+##Wiring
+<How to wire up all the bits>
+
+##3D printing the case
+<Links to the case files and instructions on how to print>
+
+##Software Installation Steps
+###Basic Setup and Dependencies
 1. [Install the OS](https://www.raspberrypi.com/software/) on the Raspberry Pi. The latest 'light' version of the OS should be fine. I suggest setting up the system to run [headless](https://www.tomshardware.com/reviews/raspberry-pi-headless-setup-how-to,6028.html), otherwise you will need a keyboard and monitor for the next steps. All the commands after this assume you are logged into the RPi over SSH.
-2. Run the configuration utility by connecting over SSH and typing 'sudo raspi-config'. In this menu, you will want to do a few things
+2. Run the configuration utility by connecting over SSH and typing `sudo raspi-config`. In this menu, you will want to do a few things
    - Change the default password
    - Set the timezone
    - Turn on I2C
@@ -12,13 +26,17 @@ Installation Steps
    - I2C Tools: `sudo apt install python-smbus i2c-tools`
    - Python package manager: `sudo apt install python3-pip`
    - Samba: `sudo apt install samba samba-common-bin`
-4. Install Python dependencies
+   - Git: `sudo apt install git`
+4. Set up Git username and password (do I need to do this to just download stuff?)
+   -`git config --global user.name "<Your Name Here>"`
+   -'git config --global user.email "<Your Email Address Here>"'
+5. Install Python dependencies
    - Display: `sudo pip3 install adafruit-circuitpython-ht16k33`
    - Temp/pressure/humidity sensor: `sudo pip3 install adafruit-circuitpython-bme280`
    - Light sensor: `sudo pip3 install adafruit-circuitpython-veml7700`
    - Neopixel: `sudo pip3 install rpi_ws281x adafruit-circuitpython-neopixel`
    - [PAHO](https://pypi.org/project/paho-mqtt/) for MQTT functionality: `pip3 install paho-mqtt`
-5. Set up Samba (only needed if you want an easy way to view/change the software)
+6. Set up Samba (only needed if you want an easy way to view/change the software)
    - Open the config file: `sudo nano /etc/samba/smb.conf` Add the following to the end of the config file to define a share:
      ```
      [share]
@@ -32,6 +50,17 @@ Installation Steps
    - Save and close the config file.
    - Add a Samba user: `sudo smbpasswd -a pi` chose a password that you will use to log in over Samba.
    - Restart the service to get everything to take effect: `sudo systemctl restart smbd`
-
+###Get the software
+1. Clone repo <add steps on how to do this...>
+2. Change the 'wall_clock-TEMPLATE.ini' file to provide the info for your MQTT server. Save the file as 'wall_clock.ini'
+3. Open 'wallclock.service' and check the line `ExecStart=/usr/bin/python3 /home/pi/software/wall_clock.py`. Make sure this line correctly points to the python3 executable and has the correct location of the wall_clock.py file. Save when done.
+4. Copy 'wallclock.service' to `/lib/systemd/system/`. You may (will probably) need root privleges for this.
+5. Ensure that 'wall_clock.py' is executable: `chmod +x /home/pi/software/wall_clock.py`
+6. Set permissions for the 'wallclock.service' file: `sudo chmod 644 /lib/systemd/system/wallclock.service`
+7. Restart systemd: `sudo systemctl daemon-reload`
+8. Enable the service:
+   -To turn on the service now: `sudo systemctl start wallclock.service`
+   -To enable the service to start on boot: `sudo systemctl enable wallclock.service`
    
-    
+##Notes:
+- The software must run as root. This a limitation of the Adafruit Neopixel library on Raspberry Pi.
