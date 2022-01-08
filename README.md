@@ -59,12 +59,19 @@ This project uses a few simple custom PCBs. <more info here someday>
 6. Set permissions for the 'wallclock.service' file: `sudo chmod 644 /lib/systemd/system/wallclock.service`
 7. Restart systemd: `sudo systemctl daemon-reload`
 8. Enable the service:
-   -To turn on the service now: `sudo systemctl start wallclock.service`
-   -To enable the service to start on boot: `sudo systemctl enable wallclock.service`
+   - To turn on the service now: `sudo systemctl start wallclock.service`
+   - To enable the service to start on boot: `sudo systemctl enable wallclock.service`
    
 ### Power Saving Info
-Some things on the Raspberry Pi can be disabled to conserve power. I measure ~150mA power consumption on the 5V line with the below changes.
+Some things on the Raspberry Pi can be disabled to conserve power. This device is designed to be powered from a fixed source, so power consumption is not critical. However, minimizing power consumption will allow for more time on the battery backup, and reduce the heat generated inside the case by the hardware.
+- Disable HDMI
+  - In '/boot/config.txt', change `dtoverlay=vc4-kms-v3d` to `dtoverlay=vc4-fkms-v3d`
+  - Run `/usr/bin/tvservice -o` to disable HDMI (-p to re-enable).
+  - Add this to the end of `/etc/rc.local` to disable HDMI on boot.
+- Turn off bluetooth 
+  - In '/boot/config.txt', add `dtoverlay=disable-bt` to disable the hardware.
+  - Run `sudo systemctl disable hciuart.service` and `sudo systemctl disable bluetooth.service` to disable the software.
+I measure ~150mA power consumption on the 5V line with the above changes. This equates to ~7 hour on-time with a 1200mAh battery. Internal temperature on the CPU is ~95F. <Check this later when the case is closed>
 
-   
 ## Notes:
 - The software must run as root. This a limitation of the Adafruit Neopixel library on Raspberry Pi.
