@@ -1,20 +1,20 @@
 # Wall-Clock-V2
 <Info on what this project is here, maybe a picture>
 
-##Bill of Materials
+## Bill of Materials
 <Add a BOM here>
 
-##Making interface PCBs.
+## Making interface PCBs.
 This project uses a few simple custom PCBs. <more info here someday>
 
-##Wiring
+## Wiring
 <How to wire up all the bits>
 
-##3D printing the case
+## 3D printing the case
 <Links to the case files and instructions on how to print>
 
-##Software Installation Steps
-###Basic Setup and Dependencies
+## Software Installation Steps
+### Basic Setup and Dependencies
 1. [Install the OS](https://www.raspberrypi.com/software/) on the Raspberry Pi. The latest 'light' version of the OS should be fine. I suggest setting up the system to run [headless](https://www.tomshardware.com/reviews/raspberry-pi-headless-setup-how-to,6028.html), otherwise you will need a keyboard and monitor for the next steps. All the commands after this assume you are logged into the RPi over SSH.
 2. Run the configuration utility by connecting over SSH and typing `sudo raspi-config`. In this menu, you will want to do a few things
    - Change the default password
@@ -50,7 +50,7 @@ This project uses a few simple custom PCBs. <more info here someday>
    - Save and close the config file.
    - Add a Samba user: `sudo smbpasswd -a pi` chose a password that you will use to log in over Samba.
    - Restart the service to get everything to take effect: `sudo systemctl restart smbd`
-###Get the software
+### Get the software
 1. Clone repo <add steps on how to do this...>
 2. Change the 'wall_clock-TEMPLATE.ini' file to provide the info for your MQTT server. Save the file as 'wall_clock.ini'
 3. Open 'wallclock.service' and check the line `ExecStart=/usr/bin/python3 /home/pi/software/wall_clock.py`. Make sure this line correctly points to the python3 executable and has the correct location of the wall_clock.py file. Save when done.
@@ -62,5 +62,9 @@ This project uses a few simple custom PCBs. <more info here someday>
    -To turn on the service now: `sudo systemctl start wallclock.service`
    -To enable the service to start on boot: `sudo systemctl enable wallclock.service`
    
-##Notes:
+### Power Saving Info
+Some things on the Raspberry Pi can be disabled to conserve power. I measure ~150mA power consumption on the 5V line with the below changes.
+
+   
+## Notes:
 - The software must run as root. This a limitation of the Adafruit Neopixel library on Raspberry Pi.
