@@ -29,7 +29,7 @@ This project uses a few simple custom PCBs. <more info here someday>
    - Git: `sudo apt install git`
 4. Set up Git username and password (do I need to do this to just download stuff?)
    - `git config --global user.name "<Your Name Here>"`
-   - 'git config --global user.email "<Your Email Address Here>"'
+   - `git config --global user.email "<Your Email Address Here>"`
 5. Install Python dependencies
    - Display: `sudo pip3 install adafruit-circuitpython-ht16k33`
    - Temp/pressure/humidity sensor: `sudo pip3 install adafruit-circuitpython-bme280`
