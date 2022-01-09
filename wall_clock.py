@@ -1,4 +1,5 @@
 
+import os
 from subprocess import call
 import configparser
 import signal
@@ -13,10 +14,20 @@ from adafruit_bme280 import basic as adafruit_bme280
 import adafruit_veml7700
 import paho.mqtt.client as mqtt
 
+#TODO: DO I make a config variable for disabling sensors? right now a missing sensor will end the program.
+
 #Import configuration and set up globals
-#TODO: Does it make sense to read these from the config file into local variables, or should I just use them directly from the config file??
+# The config file must be located in the working directory of the program.
+# TODO: Does it make sense to read these from the config file into local variables, or should I just use them directly from the config file??
 config = configparser.ConfigParser()
-config.read('/home/pi/software/wall_clock.ini')     #TODO: Do I need the full path here?
+cwd = os.getcwd()
+ConfigFileLocation = cwd+"/wall_clock.ini"
+
+#Check if the config file is present. Exit if it is not found.
+try:
+    config.read_file(open(ConfigFileLocation, "r"))
+except:
+    sys.exit("Failed reading config file at " + ConfigFileLocation)
 
 LBO_Reset_Count = int(config['DEFAULT']['LBOResetLimit'])
 LoopDelayTime = int(config['DEFAULT']['TickTime'])
@@ -47,15 +58,26 @@ MQTT_Status_Topic_ONOFF = MQTT_Status_Topic + "light/switch"
 MQTT_Status_Topic_Brightness = MQTT_Status_Topic + "brightness/set"
 MQTT_Status_Topic_RGB = MQTT_Status_Topic + "rgb/set"
 
-
-
+I2C_Timeout_Val = 10    #Number of times to try sending I2C communication before exiting. TODO: Should this be defined in the config?
 
 #Initialize I2C devices
-i2c = board.I2C()
-time.sleep(1)
-bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
-veml7700 = adafruit_veml7700.VEML7700(i2c)
-display = BigSeg7x4(i2c)
+TimeoutCount = 0
+while TimeoutCount<I2C_Timeout_Val:
+    try:
+        i2c = board.I2C()
+        time.sleep(1)
+        bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
+        veml7700 = adafruit_veml7700.VEML7700(i2c)
+        display = BigSeg7x4(i2c)
+        break
+    except OSError:
+        print("I2C Error #"+str(TimeoutCount)+" initializing I2C")
+    TimeoutCount = TimeoutCount + 1
+
+if TimeoutCount >= I2C_Timeout_Val:
+    #Failed to communicate over I2C
+    OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
+    sys.exit("I2C Failure initializing I2C")
 
 #Set up the Neopixel
 #Note: the script must be run as root in order for neopixel code to work
@@ -150,11 +172,42 @@ def GetCPUTemp():
 
 def MQTT_SendData():
     if UseMQTT and (MQTT_Server_status == 0):
-        RoomTemp = bme280.temperature       #C
-        BarometricPress = bme280.pressure   #millibar
-        RoomHumidity = bme280.humidity      #RH%
+        #Read from sensors, handle occasional I2C errors.
+        
+        #BME280
+        TimeoutCount = 0
+        while TimeoutCount<I2C_Timeout_Val:
+            try:
+                RoomTemp = bme280.temperature       #C
+                BarometricPress = bme280.pressure   #millibar
+                RoomHumidity = bme280.humidity      #RH%
+                break
+            except OSError:
+                print("I2C Error #"+str(TimeoutCount)+" when reading from BME280")
+            TimeoutCount = TimeoutCount + 1
+        
+        if TimeoutCount >= I2C_Timeout_Val:
+            #Failed to communicate over I2C
+            OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
+            sys.exit("I2C Failure reading from BME280")
+        
+        #VEML7700
+        TimeoutCount = 0
+        while TimeoutCount<I2C_Timeout_Val:
+            try:
+                LightLevel = veml7700.lux           #Lux
+                break
+            except OSError:
+                print("I2C Error #"+str(TimeoutCount)+" when reading from VEML7700")
+            TimeoutCount = TimeoutCount + 1
+        
+        if TimeoutCount >= I2C_Timeout_Val:
+            #Failed to communicate over I2C
+            OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
+            sys.exit("I2C Failure reading from VEML7700")
+        
+        #CPU Temperature
         CPUTemp = GetCPUTemp()              #C
-        LightLevel = veml7700.lux           #Lux
         
         if TempUnits == "F":
             RoomTemp = RoomTemp*(9.0/5.0)+32.0
@@ -163,7 +216,7 @@ def MQTT_SendData():
         if PressureUnits == "inHg":
             BarometricPress = BarometricPress / 33.864
         
-    
+        #TODO: Do i need a try-except here for I2C errors?
         client.publish(MQTT_Data_Topic_Temp, payload="{:.2f}".format(RoomTemp), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_Pressure, payload="{:.2f}".format(BarometricPress), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_Humidity, payload="{:.2f}".format(RoomHumidity), qos=0, retain=False)
@@ -219,7 +272,7 @@ def MQTT_Connect():
 
 def UpdateDisplay(CurrentTime):
     TimeoutCount = 0
-    while TimeoutCount<10:
+    while TimeoutCount<I2C_Timeout_Val:
         try:
             if AMPM:
                 #Use AM/PM
@@ -237,11 +290,17 @@ def UpdateDisplay(CurrentTime):
             display[2] = TimeString[2]
             display[3] = TimeString[3]
             display.colon = True
+            display.brightness = DisplayBrightness  #Set display brightness
             break
         except OSError:
-            print(CurrentTime.strftime("%H:%M"), ": OS Error", TimeoutCount)
+            print("I2C Error #"+str(TimeoutCount)+" in UpdateDisplay")
             
         TimeoutCount = TimeoutCount + 1
+        
+    if TimeoutCount >= I2C_Timeout_Val:
+        #Failed to communicate over I2C
+        OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
+        sys.exit("I2C Failure in UpdateDisplay")
 
 def main():
     global PixelUpdate
@@ -261,7 +320,6 @@ def main():
     #TODO: Is there a way to request the RGB LED status from the server? maybe using the availability topic?
 
     #Display time on the display
-    display.brightness = DisplayBrightness  #Set display brightness
     now = datetime.now()
     UpdateDisplay(now)
     OldMin = now.strftime("%M")
@@ -323,7 +381,17 @@ def OnShutdown():
     #Turn off the display and RGB LED.
     pixels.fill((0, 0, 0))
     pixels.show()
-    display.fill(0)
+    
+    #Try to blank the display. This might fail if we are having I2C communication issues.
+    # Ignore errors, we are quitting anyway. Try as hard as we can to exit gracefully.
+    TimeoutCount = 0
+    while TimeoutCount<I2C_Timeout_Val:
+        try:
+            display.fill(0)
+            break
+        except:
+            pass
+        TimeoutCount = TimeoutCount + 1
 
 def signal_handler(sig, frame):
     OnShutdown()

@@ -4,7 +4,8 @@ After=multi-user.target
 
 [Service]
 Type=idle
-ExecStart=/usr/bin/python3 /home/pi/software/wall_clock.py
+WorkingDirectory=/home/pi/software/Wall-Clock-V2
+ExecStart=/usr/bin/python3 -u /home/pi/software/Wall-Clock-V2/wall_clock.py
 Restart=on-abort
 
 [Install]
