@@ -2,6 +2,9 @@
 <Info on what this project is here, maybe a picture>
 
 ## Bill of Materials
+![Adafruit 1.2" 4-Digit 7-Segment Display w/I2C Backpack](/assets/1270-04.jpg)
+
+
 <Add a BOM here>
 
 ## Making interface PCBs.
