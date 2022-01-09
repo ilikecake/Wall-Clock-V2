@@ -106,7 +106,6 @@ VUSB.direction = digitalio.Direction.INPUT
 VUSB.pull = None
 LBO.direction = digitalio.Direction.INPUT
 LBO.pull = None
-#TODO: Shut down when we have been on battery for a while?
 
 client = mqtt.Client()
 MQTT_Server_status = 255
@@ -209,6 +208,7 @@ def MQTT_SendData():
         #CPU Temperature
         CPUTemp = GetCPUTemp()              #C
         
+        #Unit conversion if needed
         if TempUnits == "F":
             RoomTemp = RoomTemp*(9.0/5.0)+32.0
             CPUTemp = CPUTemp*(9.0/5.0)+32.0
@@ -216,7 +216,6 @@ def MQTT_SendData():
         if PressureUnits == "inHg":
             BarometricPress = BarometricPress / 33.864
         
-        #TODO: Do i need a try-except here for I2C errors?
         client.publish(MQTT_Data_Topic_Temp, payload="{:.2f}".format(RoomTemp), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_Pressure, payload="{:.2f}".format(BarometricPress), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_Humidity, payload="{:.2f}".format(RoomHumidity), qos=0, retain=False)
