@@ -53,7 +53,9 @@ This project uses a few simple custom PCBs. <more info here someday>
 ### Get the software
 1. Clone repo <add steps on how to do this...>
 2. Change the 'wall_clock-TEMPLATE.ini' file to provide the info for your MQTT server. Save the file as 'wall_clock.ini'
-3. Open 'wallclock.service' and check the line `ExecStart=/usr/bin/python3 /home/pi/software/wall_clock.py`. Make sure this line correctly points to the python3 executable and has the correct location of the wall_clock.py file. Save when done.
+3. Open 'wallclock.service' and check
+   - Check the line `WorkingDirectory=`. Make sure the path is the full path to the folder with the .py script and .ini file.
+   - Check the line `ExecStart=`. Make sure this line correctly points to the python3 executable and has the correct location of the wall_clock.py file.
 4. Copy 'wallclock.service' to `/lib/systemd/system/`. You may (will probably) need root privleges for this.
 5. Ensure that 'wall_clock.py' is executable: `chmod +x /home/pi/software/wall_clock.py`
 6. Set permissions for the 'wallclock.service' file: `sudo chmod 644 /lib/systemd/system/wallclock.service`
