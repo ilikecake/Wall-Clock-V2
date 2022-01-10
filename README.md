@@ -2,7 +2,29 @@
 <Info on what this project is here, maybe a picture>
 
 ## Bill of Materials
-![Adafruit 1.2" 4-Digit 7-Segment Display w/I2C Backpack](/assets/1270-04.jpg)
+
+### Commercial Parts
+The main parts of the clock are.
+| Part | Description |
+| --- | --- |
+| [Raspberry Pi Zero W](https://www.raspberrypi.com/products/raspberry-pi-zero-w/)<br>Available from multiple places. You want the version without the GPIO header. | img |
+| [Adafruit 1.2" 4-Digit 7-Segment Display w/I2C Backpack](https://www.adafruit.com/product/1270) | <img src="https://github.com/ilikecake/Wall-Clock-V2/blob/main/assets/1270-04.jpg" height="100"> |
+| [PowerBoost 1000 Charger](https://www.adafruit.com/product/2465) | img |
+| [Lithium Ion Polymer Battery, 1200mAh](https://www.adafruit.com/product/258) | img |
+| [VEML7700 Light Sensor](https://www.adafruit.com/product/4162) | img |
+| [BME280 Temperature/Pressure/Humidity Sensor](https://www.sparkfun.com/products/13676) | img |
+| [Breadboard-friendly NeoPixel](https://www.adafruit.com/product/1312) | img |
+
+### Custom PCBs
+This project uses a few simple custom PCBs. These parts will require a bit of relativly easy surface mount soldering.
+| Part | Description |
+| --- | --- |
+| [USB Power Entry PCB](https://oshpark.com/shared_projects/DeTFANqL) | img |
+| [Interface PCB](https://oshpark.com/shared_projects/3Y6FiWnK) | img |
+| Various Loose Components | img |
+| Wire, 24 gauge and 30 gauge | img |
+
+
 
 
 <Add a BOM here>
