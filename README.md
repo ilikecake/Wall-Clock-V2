@@ -15,6 +15,23 @@ The main parts of the clock are.
 | [BME280 Temperature/Pressure/Humidity Sensor](https://www.sparkfun.com/products/13676) | img |
 | [Breadboard-friendly NeoPixel](https://www.adafruit.com/product/1312) | img |
 
+### Fasteners and misc hardware
+Various fasteners are needed to put this project together.
+| Part | Quantity | Location |
+| --- | --- | --- |
+| [#4-40 FHMS, .5” Length](https://www.mcmaster.com/92210A110/) | 4 | Case to back |
+| [#4-40 Nut](https://www.mcmaster.com/91841A005/) | 4 | Case to back |
+| [#2-56 FHMS, .25” Length](https://www.mcmaster.com/91771A104/) | 2 | Power Switch |
+| [#2-56 PHMS, .1875” Length](https://www.mcmaster.com/91772A076/) | 2 | PowerBoost |
+| [#2-56 Nut](https://www.mcmaster.com/91841A003/) | 4 | Power Switch, PowerBoost |
+| [#2 Self Tapping Screw, .1875” Length](https://www.mcmaster.com/99461A710/) | 10 | Power Entry, Sensors, Neopixel, Battery Holder |
+| [M2.5 PHMS, 5mm Length](https://www.mcmaster.com/92000A103/) | 3 | RPi |
+| [M2.5 Nut](https://www.mcmaster.com/91828A113/) | 3 | RPi |
+| [#0-80 SHCS, .5” Length](https://www.mcmaster.com/92196A070/) | 4 | Midframe |
+| [#0 Washer](https://www.mcmaster.com/90107A001/) | 4 | Midframe |
+| [#0-80 Nut](https://www.mcmaster.com/91841A115/) | 4 | Midframe |
+| [Plastic for Window, .125" thick](https://www.mcmaster.com/8505K721-8505K111/) | 1 | Window, Cut to 1.625"x4.36" |
+
 ### Custom PCBs
 This project uses a few simple custom PCBs. These parts will require a bit of relativly easy surface mount soldering.
 | Part | Description |
