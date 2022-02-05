@@ -1,3 +1,5 @@
+# Wall Clock V2
+
 This project is a digital wall clock powered by a Raspberry Pi. Aside from telling the time, the clock also contains several sensors and a RGB LED which can be linked to [home assistant](https://www.home-assistant.io/) to perform various smart home functions.
 
 <img src="https://github.com/ilikecake/Wall-Clock-V2/blob/main/assets/on-wall.JPG" height="200">  [<img src="https://github.com/ilikecake/Wall-Clock-V2/blob/main/assets/inside-assembled.JPG" height="200">](https://github.com/ilikecake/Wall-Clock-V2/blob/main/assets/inside-assembled.JPG)
