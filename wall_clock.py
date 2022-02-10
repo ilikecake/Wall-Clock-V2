@@ -37,6 +37,9 @@ TempUnits = config['DEFAULT']['TempUnits']
 PressureUnits = config['DEFAULT']['PressureUnits']
 AMPM = config.getboolean('DEFAULT', 'AMPM')
 
+UseBME280 = config.getboolean('DEFAULT', 'UseBME280')
+UseVEML7700 = config.getboolean('DEFAULT', 'UseVEML7700')
+
 UseMQTT = config.getboolean('MQTT', 'UseMQTT')
 MQTT_Server_IP = config['MQTT']['ServerIP']
 MQTT_Server_Port = int(config['MQTT']['port'])
@@ -66,8 +69,10 @@ while TimeoutCount<I2C_Timeout_Val:
     try:
         i2c = board.I2C()
         time.sleep(1)
-        bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
-        veml7700 = adafruit_veml7700.VEML7700(i2c)
+        if UseBME280:
+            bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c)
+        if UseVEML7700:
+            veml7700 = adafruit_veml7700.VEML7700(i2c)
         display = BigSeg7x4(i2c)
         break
     except OSError:
@@ -174,52 +179,59 @@ def MQTT_SendData():
         #Read from sensors, handle occasional I2C errors.
         
         #BME280
-        TimeoutCount = 0
-        while TimeoutCount<I2C_Timeout_Val:
-            try:
-                RoomTemp = bme280.temperature       #C
-                BarometricPress = bme280.pressure   #millibar
-                RoomHumidity = bme280.humidity      #RH%
-                break
-            except OSError:
-                print("I2C Error #"+str(TimeoutCount)+" when reading from BME280")
-            TimeoutCount = TimeoutCount + 1
-        
-        if TimeoutCount >= I2C_Timeout_Val:
-            #Failed to communicate over I2C
-            OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
-            sys.exit("I2C Failure reading from BME280")
+        if UseBME280:
+            TimeoutCount = 0
+            while TimeoutCount<I2C_Timeout_Val:
+                try:
+                    #TODO: Taking these three readings performes three separate data conversions on the device, but it appears that only one is needed. Check to see if I can fix this later.
+                    RoomTemp = bme280.temperature       #C
+                    BarometricPress = bme280.pressure   #millibar
+                    RoomHumidity = bme280.humidity      #RH%
+                    break
+                except OSError:
+                    print("I2C Error #"+str(TimeoutCount)+" when reading from BME280")
+                TimeoutCount = TimeoutCount + 1
+            
+            if TimeoutCount >= I2C_Timeout_Val:
+                #Failed to communicate over I2C
+                OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
+                sys.exit("I2C Failure reading from BME280")
+            
+            #Unit conversion if needed
+            if TempUnits == "F":
+                RoomTemp = RoomTemp*(9.0/5.0)+32.0
+            if PressureUnits == "inHg":
+                BarometricPress = BarometricPress / 33.864
+            
+            client.publish(MQTT_Data_Topic_Temp, payload="{:.2f}".format(RoomTemp), qos=0, retain=False)
+            client.publish(MQTT_Data_Topic_Pressure, payload="{:.2f}".format(BarometricPress), qos=0, retain=False)
+            client.publish(MQTT_Data_Topic_Humidity, payload="{:.2f}".format(RoomHumidity), qos=0, retain=False)
         
         #VEML7700
-        TimeoutCount = 0
-        while TimeoutCount<I2C_Timeout_Val:
-            try:
-                LightLevel = veml7700.lux           #Lux
-                break
-            except OSError:
-                print("I2C Error #"+str(TimeoutCount)+" when reading from VEML7700")
-            TimeoutCount = TimeoutCount + 1
-        
-        if TimeoutCount >= I2C_Timeout_Val:
-            #Failed to communicate over I2C
-            OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
-            sys.exit("I2C Failure reading from VEML7700")
+        if UseVEML7700:
+            TimeoutCount = 0
+            while TimeoutCount<I2C_Timeout_Val:
+                try:
+                    LightLevel = veml7700.lux           #Lux
+                    break
+                except OSError:
+                    print("I2C Error #"+str(TimeoutCount)+" when reading from VEML7700")
+                TimeoutCount = TimeoutCount + 1
+            
+            if TimeoutCount >= I2C_Timeout_Val:
+                #Failed to communicate over I2C
+                OnShutdown()    #If this fails, the OnShutdown might also fail, but try it anyway.
+                sys.exit("I2C Failure reading from VEML7700")
+                
+            client.publish(MQTT_Data_Topic_Light, payload="{:.2f}".format(LightLevel), qos=0, retain=False)
         
         #CPU Temperature
         CPUTemp = GetCPUTemp()              #C
         
         #Unit conversion if needed
         if TempUnits == "F":
-            RoomTemp = RoomTemp*(9.0/5.0)+32.0
             CPUTemp = CPUTemp*(9.0/5.0)+32.0
         
-        if PressureUnits == "inHg":
-            BarometricPress = BarometricPress / 33.864
-        
-        client.publish(MQTT_Data_Topic_Temp, payload="{:.2f}".format(RoomTemp), qos=0, retain=False)
-        client.publish(MQTT_Data_Topic_Pressure, payload="{:.2f}".format(BarometricPress), qos=0, retain=False)
-        client.publish(MQTT_Data_Topic_Humidity, payload="{:.2f}".format(RoomHumidity), qos=0, retain=False)
-        client.publish(MQTT_Data_Topic_Light, payload="{:.2f}".format(LightLevel), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_CPUTemp, payload="{:.2f}".format(CPUTemp), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_Availability, payload="online", qos=0, retain=False)
 
