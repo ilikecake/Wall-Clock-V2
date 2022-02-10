@@ -83,7 +83,7 @@ if TimeoutCount >= I2C_Timeout_Val:
 #Note: the script must be run as root in order for neopixel code to work
 pixel_pin = board.D18   #NeoPixels must be connected to D10, D12, D18 or D21 to work.
 num_pixels = 1          #The number of NeoPixels
-ORDER = neopixel.RGB    #The order of the pixel colors - RGB or GRB. For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
+ORDER = neopixel.GRB    #The order of the pixel colors - RGB or GRB. For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=ORDER)
 
 #Global values for the pixel color.
