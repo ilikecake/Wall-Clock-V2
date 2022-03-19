@@ -14,14 +14,14 @@ from adafruit_bme280 import basic as adafruit_bme280
 import adafruit_veml7700
 import paho.mqtt.client as mqtt
 
-#TODO: DO I make a config variable for disabling sensors? right now a missing sensor will end the program.
-
 #Import configuration and set up globals
 # The config file must be located in the working directory of the program.
 # TODO: Does it make sense to read these from the config file into local variables, or should I just use them directly from the config file??
 config = configparser.ConfigParser()
 cwd = os.getcwd()
 ConfigFileLocation = cwd+"/wall_clock.ini"
+
+#TODO: Get rid of except all statements. I need to say what errors to except
 
 #Check if the config file is present. Exit if it is not found.
 try:
@@ -63,8 +63,6 @@ MQTT_Status_Topic_RGB = MQTT_Status_Topic + "rgb/set"
 
 I2C_Timeout_Val = 10    #Number of times to try sending I2C communication before exiting. TODO: Should this be defined in the config?
 
-
-
 #Set up the Neopixel
 #Note: the script must be run as root in order for neopixel code to work
 pixel_pin = board.D18   #NeoPixels must be connected to D10, D12, D18 or D21 to work.
@@ -80,18 +78,6 @@ PixelBlueVal = 0
 PixelBrightness = 100
 PixelOn = False
 PixelUpdate = False
-
-#Set up GPIO to sense power and low battery
-# VUSB goes low when USB power is lost
-# LBO should go low when the battery is low
-VUSB_Pin = board.D15
-LBO_Pin = board.D14
-VUSB = digitalio.DigitalInOut(VUSB_Pin)
-LBO = digitalio.DigitalInOut(LBO_Pin)
-VUSB.direction = digitalio.Direction.INPUT
-VUSB.pull = None
-LBO.direction = digitalio.Direction.INPUT
-LBO.pull = None
 
 client = mqtt.Client()
 MQTT_Server_status = 255
@@ -218,9 +204,9 @@ def MQTT_SendData(BME280_class, VEML7700_class):
         client.publish(MQTT_Data_Topic_CPUTemp, payload="{:.2f}".format(CPUTemp), qos=0, retain=False)
         client.publish(MQTT_Data_Topic_Availability, payload="online", qos=0, retain=False)
 
-def MQTT_ReportPowerStatus():
+def MQTT_ReportPowerStatus(PowerStatus):
     if UseMQTT and (MQTT_Server_status == 0):
-        if VUSB.value == 1:
+        if PowerStatus == True:
             client.publish(MQTT_Data_Topic_Power, payload="TRUE", qos=0, retain=False)
         else:
             client.publish(MQTT_Data_Topic_Power, payload="FALSE", qos=0, retain=False)
@@ -264,7 +250,7 @@ def MQTT_Connect():
                 # The main loop should retry this connection periodically
                 client.loop_stop()
 
-def UpdateDisplay(CurrentTime):
+def UpdateDisplay(CurrentTime, DisplayObject):
     TimeoutCount = 0
     while TimeoutCount<I2C_Timeout_Val:
         try:
@@ -272,19 +258,19 @@ def UpdateDisplay(CurrentTime):
                 #Use AM/PM
                 TimeString = CurrentTime.strftime("%I%M")
                 if TimeString[0] == '0':
-                    display[0] = ' '
+                    DisplayObject[0] = ' '
                 else:
-                    display[0] = TimeString[0]
+                    DisplayObject[0] = TimeString[0]
             else:
                 #24 hour time
                 TimeString = CurrentTime.strftime("%H%M")
-                display[0] = TimeString[0]
+                DisplayObject[0] = TimeString[0]
             
-            display[1] = TimeString[1]
-            display[2] = TimeString[2]
-            display[3] = TimeString[3]
-            display.colon = True
-            display.brightness = DisplayBrightness  #Set display brightness
+            DisplayObject[1] = TimeString[1]
+            DisplayObject[2] = TimeString[2]
+            DisplayObject[3] = TimeString[3]
+            DisplayObject.colon = True
+            DisplayObject.brightness = DisplayBrightness  #Set display brightness
             break
         except OSError:
             print("I2C Error #"+str(TimeoutCount)+" in UpdateDisplay")
@@ -298,9 +284,26 @@ def UpdateDisplay(CurrentTime):
 
 def main():
     global PixelUpdate
+    
     signal.signal(signal.SIGINT, signal_handler)    #Catch Control+C
     signal.signal(signal.SIGTERM, signal_handler)   #Catch the exit command from systemd. SIGTERM is sent from systemd when 'systemctl stop <service>' is called.
     
+    #Set up GPIO to sense power and low battery
+    # VUSB goes high when USB power is lost
+    # LBO should go high when the battery is low
+    # EN_I2C controls the I2C to the display. Set to True to enable.
+    VUSB = digitalio.DigitalInOut(board.D15)
+    LBO = digitalio.DigitalInOut(board.D14)
+    EN_I2C = digitalio.DigitalInOut(board.D17)
+    
+    VUSB.direction = digitalio.Direction.INPUT
+    VUSB.pull = None
+    LBO.direction = digitalio.Direction.INPUT
+    LBO.pull = None
+    EN_I2C.direction = digitalio.Direction.OUTPUT
+    EN_I2C.DriveMode = digitalio.DriveMode.PUSH_PULL
+    EN_I2C.value = True
+
     LBO_Count = 0
     
     #Initialize I2C devices
@@ -365,7 +368,7 @@ def main():
 
     #Display time on the display
     now = datetime.now()
-    UpdateDisplay(now)
+    UpdateDisplay(now, display)
     OldMin = now.strftime("%M")
     OldHour = now.strftime("%H")
 
@@ -375,7 +378,7 @@ def main():
         #Once per minute
         if now.strftime("%M") != OldMin:
             OldMin = now.strftime("%M")
-            UpdateDisplay(now)
+            UpdateDisplay(now, display)
             MQTT_SendData(bme280, veml7700)     #Send data to MQTT server
 
         #Once per hour
@@ -388,13 +391,15 @@ def main():
             MQTT_Connect()      
         
         #Inform the MQTT server if power is lost
-        MQTT_ReportPowerStatus()
+        #The pin value is low if USB power is present
+        MQTT_ReportPowerStatus(not VUSB.value)
         
         #Monitor LBO from the powerboost and shutdown if LBO is low for a certain number of counts.
         # I did not want noise on the LBO line to shutdown the Pi unnessecarially.
         # I therefore require a certain number of LBO readings before doing a shutdown
         # With the default tick rate of 1s and LBO_Reset_Count = 10, this will execute a shutdown after ~10sec.
-        if LBO.value == 0:
+        #TODO: Check if power is available, LBO count should only increase if LBO is high and power is off.
+        if LBO.value == True:
             if LBO_Count > LBO_Reset_Count:
                 #Shutdown
                 OnShutdown()
